@@ -1,15 +1,15 @@
-name: Export Database ke XML Blogger
+name: Scrape RSS & Export ke Blogger XML
 
 on:
-  workflow_dispatch: # Hanya berjalan saat tombol ditekan manual
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  export:
+  build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout kode
@@ -19,21 +19,25 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
-      - name: Jalankan Export XML
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install feedparser requests beautifulsoup4 lxml
+
+      - name: Jalankan Scrape & Export
         run: python export_blogger.py
 
-      # ===== SIMPAN FILE XML KE REPO GITHUB =====
       - name: Commit & Push XML
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Ambil file XML yang baru dibuat
-          git add export_blogger.xml || true
+          # Simpan database (agar scraping berikutnya tidak mengulang) dan file XML
+          git add database_hasil5/ export_blogger.xml || true
           
-          # Jika tidak ada perubahan, hentikan
-          git diff --staged --quiet && echo "Tidak ada file XML baru" && exit 0
+          git diff --staged --quiet && echo "Tidak ada perubahan" && exit 0
           
-          git commit -m "Update export XML Blogger [skip ci]"
+          git commit -m "Update database & export XML Blogger [skip ci]"
           git push
