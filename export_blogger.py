@@ -10,8 +10,6 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent.resolve()
 DB_PATH = str(BASE_DIR / "database_hasil5" / "database.sqlite")
 
-# ✅ TANPA BLOG_URL & TANPA PORTAL BERITA INDONESIA
-# Kita hanya butuh nama author untuk metadata XML
 AUTHOR_NAME = "Admin"
 
 def esc(text):
@@ -20,10 +18,27 @@ def esc(text):
         return ""
     return html_mod.escape(str(text))
 
-def generate_blogger_xml():
+def ensure_database():
+    """✅ FIX: Buat database kosong jika tidak ditemukan agar tidak error"""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not os.path.exists(DB_PATH):
-        print(f"Error: Database tidak ditemukan di {DB_PATH}")
-        return
+        print(f"⚠️ Database tidak ditemukan di {DB_PATH}")
+        print("   Membuat database kosong...")
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS artikel (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                link TEXT UNIQUE, judul TEXT, konten TEXT, gambar TEXT,
+                tanggal_publish TEXT, tanggal_update TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+        print("   ✅ Database kosong berhasil dibuat.\n")
+
+def generate_blogger_xml():
+    # ✅ Panggil fungsi pembuat database
+    ensure_database()
 
     print("[*] Membaca database...")
     conn = sqlite3.connect(DB_PATH)
@@ -33,10 +48,9 @@ def generate_blogger_xml():
     conn.close()
 
     if not rows:
-        print("Tidak ada artikel di dalam database.")
-        return
-
-    print(f"[*] Memproses {len(rows)} artikel menjadi format XML Blogger...")
+        print("⚠️ Tidak ada artikel di dalam database. File XML akan dibuat kosong.")
+    else:
+        print(f"[*] Memproses {len(rows)} artikel menjadi format XML Blogger...")
 
     today_iso = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.000+07:00')
     
@@ -57,7 +71,6 @@ def generate_blogger_xml():
     for row in rows:
         artikel_id, judul, konten, gambar, tanggal_publish, link = row
         
-        # Format tanggal ke ISO 8601
         if tanggal_publish:
             try:
                 dt = datetime.fromisoformat(tanggal_publish.replace('Z', '+00:00'))
@@ -67,13 +80,9 @@ def generate_blogger_xml():
         else:
             published_iso = today_iso
 
-        # ✅ IKLAN TETAP ADA: konten asli dari DB sudah berisi script Adsterra.
-        # Kita hanya perlu meng-escape-nya agar valid sebagai XML.
         safe_content = esc(konten)
         
-        # URL unik untuk ID artikel di Blogger (menggunakan ID sebagai identifier)
         post_id = f"tag:blogger.com,1999:blog-{artikel_id}.post-{artikel_id}"
-        # ✅ TANPA BLOG_URL: Kita gunakan placeholder netral untuk link (Blogger akan mengabaikannya saat impor)
         post_url = f"https://dummy.blogspot.com/{artikel_id}.html"
 
         xml_parts.append('  <entry>')
