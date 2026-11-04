@@ -1,0 +1,39 @@
+name: Export Database ke XML Blogger
+
+on:
+  workflow_dispatch: # Hanya berjalan saat tombol ditekan manual
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Jalankan Export XML
+        run: python export_blogger.py
+
+      # ===== SIMPAN FILE XML KE REPO GITHUB =====
+      - name: Commit & Push XML
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Ambil file XML yang baru dibuat
+          git add export_blogger.xml || true
+          
+          # Jika tidak ada perubahan, hentikan
+          git diff --staged --quiet && echo "Tidak ada file XML baru" && exit 0
+          
+          git commit -m "Update export XML Blogger [skip ci]"
+          git push
