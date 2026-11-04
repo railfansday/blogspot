@@ -5,10 +5,12 @@ from datetime import datetime
 from pathlib import Path
 
 # ==========================================================================
-# KONFIGURASI PATH
+# KONFIGURASI PATH (DIPERBAIKI)
 # ==========================================================================
 BASE_DIR = Path(__file__).parent.resolve()
-DB_PATH = str(BASE_DIR / "database_hasil5" / "database.sqlite")
+
+# ✅ FIX: DB_PATH sekarang berupa objek Path (bukan string) agar .parent berfungsi
+DB_PATH = BASE_DIR / "database_hasil5" / "database.sqlite"
 
 AUTHOR_NAME = "Admin"
 
@@ -20,11 +22,14 @@ def esc(text):
 
 def ensure_database():
     """✅ FIX: Buat database kosong jika tidak ditemukan agar tidak error"""
+    # Karena DB_PATH sudah Path, .parent dan .mkdir() bisa digunakan
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not os.path.exists(DB_PATH):
+    
+    if not DB_PATH.exists():
         print(f"⚠️ Database tidak ditemukan di {DB_PATH}")
         print("   Membuat database kosong...")
-        conn = sqlite3.connect(DB_PATH)
+        # ✅ FIX: sqlite3.connect() membutuhkan string, jadi kita bungkus dengan str()
+        conn = sqlite3.connect(str(DB_PATH))
         conn.execute("""
             CREATE TABLE IF NOT EXISTS artikel (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,11 +42,11 @@ def ensure_database():
         print("   ✅ Database kosong berhasil dibuat.\n")
 
 def generate_blogger_xml():
-    # ✅ Panggil fungsi pembuat database
+    # Panggil fungsi pembuat database
     ensure_database()
 
     print("[*] Membaca database...")
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
     cursor.execute("SELECT id, judul, konten, gambar, tanggal_publish, link FROM artikel ORDER BY id ASC")
     rows = cursor.fetchall()
@@ -80,6 +85,7 @@ def generate_blogger_xml():
         else:
             published_iso = today_iso
 
+        # Konten di-escape agar tag <script> iklan tidak merusak XML
         safe_content = esc(konten)
         
         post_id = f"tag:blogger.com,1999:blog-{artikel_id}.post-{artikel_id}"
