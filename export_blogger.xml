@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:app="http://www.w3.org/2007/app" xmlns:thr="http://purl.org/syndication/thread/1.0" xmlns:georss="http://www.georss.org/georss">
+  <title type="text">Blogger Export</title>
+  <updated>2026-11-04T01:33:01.000+07:00</updated>
+  <generator version="7.00">Blogger</generator>
+  <author>
+    <name>Admin</name>
+    <email>noreply@blogger.com</email>
+  </author>
+</feed>
